@@ -11,7 +11,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        self.room_name = f"user_{user.id}"
+        self.room_name = f"{user.id}"
         self.room_group_name = f"chat_{self.room_name}"
 
         await self.channel_layer.group_add(
@@ -21,8 +21,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        last_messages = await self.get_last_messages(user, limit=100)
+
+        messages_data = [
+            {
+                "sender": msg.sender,
+                "message": msg.text
+            }
+            for msg in last_messages
+        ]
+
         await self.send(text_data=json.dumps({
-            "message": f"Привет, {user.username}!"
+            "type": "massages",
+            "content": messages_data
         }))
 
     async def disconnect(self, close_code):
@@ -54,6 +65,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return Message.objects.filter(user=user).order_by('-created_at').first()
 
     @database_sync_to_async
+    def get_last_messages(self, user, limit=100):
+        return Message.objects.filter(user=user).order_by('-created_at')[:limit][::-1]
+
+    @database_sync_to_async
     def save_message(self, user, text, sender):
         return Message.objects.create(user=user, text=text, sender=sender)
+
+    async def chat_message(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps(message))
+
 
