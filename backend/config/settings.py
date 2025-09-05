@@ -30,7 +30,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
 
-    'apps.account'
+    'apps.account',
+    'apps.chat'
 ]
 
 MIDDLEWARE = [
